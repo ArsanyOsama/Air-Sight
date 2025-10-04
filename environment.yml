@@ -1,0 +1,21 @@
+name: air-sight
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - fastapi
+  - uvicorn
+  - requests
+  - pandas
+  - numpy
+  - scikit-learn
+  - boto3
+  - pydantic
+  - aiohttp
+  - jupyterlab
+  - matplotlib
+  - seaborn
+  - pytest
+  - pip:
+      - openaq
+      - airnow-api

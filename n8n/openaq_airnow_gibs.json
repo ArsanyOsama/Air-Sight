@@ -1,0 +1,164 @@
+{
+  "name": "OpenAQ-AirNow-GIBS-and-Fetcher",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {"item":[{"hour":"*","minute":"0","second":"0"}]}
+      },
+      "name": "Hourly Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240,200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://api.openaq.org/v3/measurements?country_id=162&parameter=pm25&limit=10000&date_from={{ $todayIso.split('T')[0] }}&date_to={{ $todayIso.split('T')[0] }}",
+        "headerParameters": [{"name":"X-API-Key","value":"{{$credentials.OPENAQ.key}}"}],
+        "responseFormat": "json"
+      },
+      "name": "Fetch OpenAQ",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [480,200]
+    },
+    {
+      "parameters": {
+        "functionCode": "const results = items[0].json.results || [];\nreturn [{ json: { results } }];"
+      },
+      "name": "Normalize OpenAQ",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [720,200]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "resource": "file",
+        "bucket": "<YOUR_BUCKET>",
+        "binaryPropertyName": "data",
+        "key": "raw/openaq/{{ $todayIso.split('T')[0] }}/openaq_{{ $now.toISOString().replace(/[:.]/g,'') }}.json"
+      },
+      "name": "Upload OpenAQ to B2",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [980,200],
+      "credentials": { "s3Api": { "id": "<S3_CREDENTIAL_ID>" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.results && $json.results.length > 0 }}", "operation": "isTrue" }
+          ]
+        }
+      },
+      "name": "Has OpenAQ Data?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1180,200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=30.0444&longitude=31.2357&distance=25&API_KEY={{ $credentials.AIRNOW.key }}",
+        "responseFormat": "json"
+      },
+      "name": "Fetch AirNow (fallback)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1440,200]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "resource": "file",
+        "bucket": "<YOUR_BUCKET>",
+        "binaryPropertyName": "data",
+        "key": "raw/airnow/{{ $todayIso.split('T')[0] }}/airnow_{{ $now.toISOString().replace(/[:.]/g,'') }}.json"
+      },
+      "name": "Upload AirNow to B2",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [1680,200],
+      "credentials": { "s3Api": { "id": "<S3_CREDENTIAL_ID>" } }
+    },
+    {
+      "parameters": {
+        "triggerTimes": { "item": [ { "hour": "3", "minute": "0", "second": "0" } ] }
+      },
+      "name": "Daily Fetch Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240,520]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-fetcher",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Fetcher Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [480,520]
+    },
+    {
+      "parameters": {
+        "command": "python /home/runner/airquality/scripts/cloud_fetcher_b2.py --date_from {{ $todayIso.split('T')[0] }} --date_to {{ $todayIso.split('T')[0] }}",
+        "options": {}
+      },
+      "name": "Execute Fetcher",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [720,520]
+    },
+    {
+      "parameters": {
+        "triggerTimes": { "item": [ { "hour": "2", "minute": "0", "second": "0" } ] }
+      },
+      "name": "Daily GIBS Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240,800]
+    },
+    {
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_NO2_Column_Density/default/{{ $todayIso.split('T')[0] }}/6/24/12.png",
+        "responseFormat": "file"
+      },
+      "name": "Fetch GIBS Tile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [480,800]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "resource": "file",
+        "bucket": "<YOUR_BUCKET>",
+        "binaryPropertyName": "data",
+        "key": "raw/gibs/no2/{{ $todayIso.split('T')[0] }}/tile.png"
+      },
+      "name": "Upload GIBS to B2",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [720,800],
+      "credentials": { "s3Api": { "id": "<S3_CREDENTIAL_ID>" } }
+    }
+  ],
+  "connections": {
+    "Hourly Cron": { "main": [[{ "node": "Fetch OpenAQ", "type": "main", "index": 0 }]] },
+    "Fetch OpenAQ": { "main": [[{ "node": "Normalize OpenAQ", "type": "main", "index": 0 }]] },
+    "Normalize OpenAQ": { "main": [[{ "node": "Upload OpenAQ to B2", "type": "main", "index": 0 }, { "node": "Has OpenAQ Data?", "type": "main", "index": 0 }]] },
+    "Has OpenAQ Data?": { "main": [[{ "node": "Execute Fetcher", "type": "main", "index": 1 }, { "node": "Pass-through", "type": "main", "index": 0 }]] },
+    "Fetch AirNow (fallback)": { "main": [[{ "node": "Upload AirNow to B2", "type": "main", "index": 0 }]] },
+    "Daily Fetch Cron": { "main": [[{ "node": "Fetcher Webhook", "type": "main", "index": 0 }]] },
+    "Fetcher Webhook": { "main": [[{ "node": "Execute Fetcher", "type": "main", "index": 0 }]] },
+    "Daily GIBS Cron": { "main": [[{ "node": "Fetch GIBS Tile", "type": "main", "index": 0 }]] },
+    "Fetch GIBS Tile": { "main": [[{ "node": "Upload GIBS to B2", "type": "main", "index": 0 }]] }
+  }
+}
+
