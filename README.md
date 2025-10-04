@@ -20,6 +20,8 @@ Lack of accessible real-time forecasts
 Communities need science-driven, actionable insights to make safer daily decisions.
 
 🌐 Our Solution — AirSight
+![Uploading image.png…]()
+
 
 ✅ Data-driven forecasts combining NASA satellites + ground truth
 ✅ AI model predicting PM₂.₅ & AQI hourly/daily
