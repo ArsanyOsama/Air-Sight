@@ -20,7 +20,9 @@ Lack of accessible real-time forecasts
 Communities need science-driven, actionable insights to make safer daily decisions.
 
 🌐 Our Solution — AirSight
-![Uploading image.png…]()
+
+<img width="744" height="697" alt="image" src="https://github.com/user-attachments/assets/8f346787-7f6d-4f4d-a667-5c7918633292" />
+
 
 
 ✅ Data-driven forecasts combining NASA satellites + ground truth
