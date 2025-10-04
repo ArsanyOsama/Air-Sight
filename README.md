@@ -1,7 +1,9 @@
-🌍 AirSight NASA — Clean Skies with AI + Earth Data
+<img width="1280" height="626" alt="image" src="https://github.com/user-attachments/assets/f970c53f-9966-4f15-a815-70683ee72929" />🌍 AirSight NASA — Clean Skies with AI + Earth Data
 
 🚀 Built for NASA Space Apps Challenge 2025 (Cairo)
 Harnessing NASA Earth Observations + AI to forecast cleaner and safer air.
+<img width="1280" height="626" alt="image" src="https://github.com/user-attachments/assets/d8d91859-4fac-405e-97b0-39a21f167aaa" />
+
 
 ✨ Overview
 
